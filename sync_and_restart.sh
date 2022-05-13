@@ -1,4 +1,2 @@
-. ./ADDRESS
-alias rsync_git="rsync --exclude='/.git' --filter='dir-merge,- .gitignore'"
-rsync_git -avzP . $ADDRESS:~/admin-shell
+. ./sync_repo.sh
 ssh $ADDRESS "admin-shell/restart_servers"
