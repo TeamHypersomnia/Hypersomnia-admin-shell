@@ -11,12 +11,23 @@ pushd /tmp
 rm -rf hypersomnia-deployment
 mkdir  hypersomnia-deployment
 
-WORKFLOWS_PATH="https://nightly.link/TeamHypersomnia/Hypersomnia/workflows"
 APPVEYOR_PATH="https://ci.appveyor.com/api/projects/geneotech/Hypersomnia/artifacts"
+WORKFLOWS_PATH="https://nightly.link/TeamHypersomnia/Hypersomnia/workflows"
+
+download_from_appveyor() {
+	local PLATFORM="Windows"
+
+	mkdir binaries-$PLATFORM
+	pushd binaries-$PLATFORM
+	wget "$APPVEYOR_PATH/Hypersomnia-for-$PLATFORM.exe"
+	wget "$APPVEYOR_PATH/Hypersomnia-for-$PLATFORM.zip"
+	wget "$APPVEYOR_PATH/$VERSION_FILENAME"
+	popd
+}
 
 download_from_github_actions() {
-	PLATFORM=$1
-	PLATFORM_PATH="$WORKFLOWS_PATH/${PLATFORM}_build/master/binaries.zip"
+	local PLATFORM=$1
+	local PLATFORM_PATH="$WORKFLOWS_PATH/${PLATFORM}_build/master/binaries.zip"
 
 	wget $PLATFORM_PATH
 
@@ -24,51 +35,73 @@ download_from_github_actions() {
 	mv binaries binaries-$PLATFORM
 }
 
-download_from_appveyor() {
-	PLATFORM=Windows
-	mkdir binaries-$PLATFORM
-	pushd binaries-$PLATFORM
-	wget "$APPVEYOR_PATH/Hypersomnia-for-$PLATFORM.exe"
-	wget "$APPVEYOR_PATH/Hypersomnia-for-$PLATFORM.zip"
-	wget "$APPVEYOR_PATH/release_notes.txt"
-	popd
-}
-
 sign_platform_file() {
-	PLATFORM=$1
-	FILE_PATH=$2
-	PRIVATE_KEY="$PRIVATE_KEYS_LOCATION/private-$PLATFORM.pem"
+	local PLATFORM=$1
+	local FILE_PATH=$2
+	local PRIVATE_KEY="$PRIVATE_KEYS_LOCATION/private-$PLATFORM.pem"
 
 	openssl dgst -sha256 -sign $PRIVATE_KEY -out "$FILE_PATH.signature" $FILE_PATH
 	openssl enc -base64 -in $FILE_PATH -out "$FILE_PATH.signature.txt"
 }
 
+read_version() {
+	local PLATFORM=$1
+
+	local VERSION_PATH="binaries-$PLATFORM/$VERSION_FILENAME"
+	VERSION=$(head -n 1 $VERSION_PATH)
+}
+
+print_version() {
+	read_version $1
+
+	echo "$1 version: $VERSION"
+}
+
 sign_and_upload() {
-	UPLOAD_URL="$DOWNLOADS_HOST/upload_artifact.php"
+	local UPLOAD_URL="$DOWNLOADS_HOST/upload_artifact.php"
 
-	PLATFORM=$1
-	EXTENSION=$2
-	ARTIFACT_TYPE=$3
+	local PLATFORM=$1
+	local EXTENSION=$2
+	local ARTIFACT_TYPE=$3
 
-	FOLDER="binaries-$PLATFORM"
-	FILE_PATH="$FOLDER/Hypersomnia-for-$PLATFORM.$EXTENSION"
+	local FOLDER="binaries-$PLATFORM"
+	local FILE_PATH="$FOLDER/Hypersomnia-for-$PLATFORM.$EXTENSION"
 
 	sign_platform_file $PLATFORM $FILE_PATH
 
-	SIGNATURE_LOCATION="$FILE_PATH.signature.txt"
+	local SIGNATURE_LOCATION="$FILE_PATH.signature.txt"
+	local SIGNATURE_CONTENT=$(<$SIGNATURE_LOCATION)
 
-	curl -F "key=$UPLOAD_API_KEY" -F "platform=$PLATFORM" -F "version=$VERSION" -F "artifact=@$FILE_PATH" -F "artifact_type=$ARTIFACT_TYPE" $UPLOAD_URL
+	read_version $PLATFORM
+
+	curl -F "key=$UPLOAD_API_KEY" -F "platform=$PLATFORM" -F "version=$VERSION" -F "artifact=@$FILE_PATH" -F "artifact_type=$ARTIFACT_TYPE" -F "signature=$SIGNATURE_CONTENT" $UPLOAD_URL
 }
 
+download_from_appveyor
 download_from_github_actions Linux
 download_from_github_actions MacOS
-download_from_appveyor
 
+
+print_version Windows
+print_version Linux
+print_version MacOS
+
+read -p "Proceed with signing? (Yy/Nn) " -n 1 -r
+echo
+if [[ ! $REPLY =~ ^[Yy]$ ]]
+then
+    exit 1
+fi
+
+echo "Signing and uploading."
+
+exit 1
+
+sign_and_upload Windows exe "updater"
+sign_and_upload Windows zip "release"
 sign_and_upload Linux sfx "updater"
 sign_and_upload Linux tar.gz "release"
 sign_and_upload MacOS app.sfx "updater"
 sign_and_upload MacOS dmg "release"
-sign_and_upload Windows exe "updater"
-sign_and_upload Windows zip "release"
 
 popd
