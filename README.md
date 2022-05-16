@@ -1,5 +1,5 @@
 # Hypersomnia downloads page
 
-### ``deploy_version.php`` 
+### ``set_latest_version.php`` 
 
-Use to set the newest version of the game and upgrade the server simultaneously.
+Use to set the newest version of the game and request the dedicated server to update itself.
