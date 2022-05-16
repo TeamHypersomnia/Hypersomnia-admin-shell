@@ -1,0 +1,74 @@
+#!/bin/bash
+. ./ADDRESS
+
+UPLOAD_API_KEY=$1
+PRIVATE_KEYS_LOCATION=$2
+
+VERSION_FILENAME="release_notes.txt"
+
+pushd /tmp
+
+rm -rf hypersomnia-deployment
+mkdir  hypersomnia-deployment
+
+WORKFLOWS_PATH="https://nightly.link/TeamHypersomnia/Hypersomnia/workflows"
+APPVEYOR_PATH="https://ci.appveyor.com/api/projects/geneotech/Hypersomnia/artifacts"
+
+download_from_github_actions() {
+	PLATFORM=$1
+	PLATFORM_PATH="$WORKFLOWS_PATH/${PLATFORM}_build/master/binaries.zip"
+
+	wget $PLATFORM_PATH
+
+	unzip binaries.zip
+	mv binaries binaries-$PLATFORM
+}
+
+download_from_appveyor() {
+	PLATFORM=Windows
+	mkdir binaries-$PLATFORM
+	pushd binaries-$PLATFORM
+	wget "$APPVEYOR_PATH/Hypersomnia-for-$PLATFORM.exe"
+	wget "$APPVEYOR_PATH/Hypersomnia-for-$PLATFORM.zip"
+	wget "$APPVEYOR_PATH/release_notes.txt"
+	popd
+}
+
+sign_platform_file() {
+	PLATFORM=$1
+	FILE_PATH=$2
+	PRIVATE_KEY="$PRIVATE_KEYS_LOCATION/private-$PLATFORM.pem"
+
+	openssl dgst -sha256 -sign $PRIVATE_KEY -out "$FILE_PATH.signature" $FILE_PATH
+	openssl enc -base64 -in $FILE_PATH -out "$FILE_PATH.signature.txt"
+}
+
+sign_and_upload() {
+	UPLOAD_URL="$DOWNLOADS_HOST/upload_artifact.php"
+
+	PLATFORM=$1
+	EXTENSION=$2
+	ARTIFACT_TYPE=$3
+
+	FOLDER="binaries-$PLATFORM"
+	FILE_PATH="$FOLDER/Hypersomnia-for-$PLATFORM.$EXTENSION"
+
+	sign_platform_file $PLATFORM $FILE_PATH
+
+	SIGNATURE_LOCATION="$FILE_PATH.signature.txt"
+
+	curl -F "key=$UPLOAD_API_KEY" -F "platform=$PLATFORM" -F "version=$VERSION" -F "artifact=@$FILE_PATH" -F "artifact_type=$ARTIFACT_TYPE" $UPLOAD_URL
+}
+
+download_from_github_actions Linux
+download_from_github_actions MacOS
+download_from_appveyor
+
+sign_and_upload Linux sfx "updater"
+sign_and_upload Linux tar.gz "release"
+sign_and_upload MacOS app.sfx "updater"
+sign_and_upload MacOS dmg "release"
+sign_and_upload Windows exe "updater"
+sign_and_upload Windows zip "release"
+
+popd
