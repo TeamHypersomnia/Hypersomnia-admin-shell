@@ -1,0 +1,143 @@
+#!/bin/bash
+. ./ADDRESS
+
+UPLOAD_API_KEY=$1
+SET_TO_LATEST_FLAG=$2
+VERSION_FILENAME="release_notes.txt"
+
+rm -rf /tmp/hypersomnia-deployment
+mkdir  /tmp/hypersomnia-deployment
+pushd  /tmp/hypersomnia-deployment
+
+APPVEYOR_PATH="https://ci.appveyor.com/api/projects/geneotech/Hypersomnia/artifacts"
+WORKFLOWS_PATH="https://nightly.link/TeamHypersomnia/Hypersomnia/workflows"
+
+download_from_appveyor() {
+	local PLATFORM="Windows"
+
+	mkdir binaries-$PLATFORM
+	pushd binaries-$PLATFORM
+	wget "$APPVEYOR_PATH/Hypersomnia-for-$PLATFORM.exe"
+	wget "$APPVEYOR_PATH/Hypersomnia-for-$PLATFORM.zip"
+	wget "$APPVEYOR_PATH/$VERSION_FILENAME"
+	dos2unix $VERSION_FILENAME
+	popd
+}
+
+download_from_github_actions() {
+	local PLATFORM=$1
+	local PLATFORM_PATH="$WORKFLOWS_PATH/${PLATFORM}_build/master/binaries.zip"
+
+	wget $PLATFORM_PATH
+
+	unzip binaries.zip -d binaries-$PLATFORM
+	pushd binaries-$PLATFORM/
+	mv hypersomnia/$VERSION_FILENAME ./
+	rmdir hypersomnia
+	popd
+	rm binaries.zip
+}
+
+sign_platform_file() {
+	local PLATFORM=$1
+	local FILE_PATH=$2
+
+	local SIGNATURE_BIN_PATH=""
+	SIGNATURE_TXT_PATH="$FILE_PATH.asc"
+
+	echo "Signing $FILE_PATH"
+	gpg --armor --output $SIGNATURE_TXT_PATH --detach-sig $FILE_PATH
+}
+
+read_version() {
+	local PLATFORM=$1
+
+	local VERSION_PATH="binaries-$PLATFORM/$VERSION_FILENAME"
+	VERSION=$(head -n 1 $VERSION_PATH)
+}
+
+print_version() {
+	read_version $1
+
+	echo "$1 version: $VERSION"
+}
+
+CURL_COMMANDS="curl_commands.txt"
+
+PLATFORMS=()
+VERSIONS=()
+ARTIFACTS=()
+ARTIFACT_TYPES=()
+SIGNATURES=()
+
+sign_and_queue_upload() {
+	local PLATFORM=$1
+	local EXTENSION=$2
+	local ARTIFACT_TYPE=$3
+
+	local FOLDER="binaries-$PLATFORM"
+	local FILE_PATH="$FOLDER/Hypersomnia-for-$PLATFORM.$EXTENSION"
+
+	sign_platform_file $PLATFORM $FILE_PATH
+	read_version $PLATFORM
+
+	PLATFORMS+=($PLATFORM)
+	VERSIONS+=($VERSION)
+	ARTIFACTS+=($FILE_PATH)
+	ARTIFACT_TYPES+=($ARTIFACT_TYPE)
+	SIGNATURES+=($SIGNATURE_TXT_PATH)
+}
+
+execute_all_uploads() {
+	local UPLOAD_URL="$DOWNLOADS_HOST/upload_artifact.php"
+
+	for i in "${!ARTIFACTS[@]}"; do 
+		local UPLOADED_FILE = ${ARTIFACTS[$i]}
+		echo "Uploading $UPLOADED_FILE..."
+
+		curl --progress-bar -o "upload_${UPLOADED_FILE}.output.log" -F "key=$UPLOAD_API_KEY" -F "platform=${PLATFORMS[$i]}" -F "version=${VERSIONS[$i]}" -F "artifact=@${UPLOADED_FILE}" -F "artifact_type=${ARTIFACT_TYPES[$i]}" -F "signature=@${SIGNATURES[$i]}" $UPLOAD_URL | cat
+	done
+}
+
+download_from_appveyor
+download_from_github_actions Linux
+download_from_github_actions MacOS
+
+print_version Windows
+print_version Linux
+print_version MacOS
+
+read_version Linux
+
+REFERENCE_VERSION=$VERSION
+REFERENCE_NOTICE=""
+
+if [[ "$SET_TO_LATEST_FLAG" == "--set-to-latest" ]]; then
+	REFERENCE_NOTICE="Latest version will be set to $REFERENCE_VERSION. "
+fi
+
+read -p "${REFERENCE_NOTICE}Sign and upload? (Yy/Nn) " -r
+
+echo
+if [[ ! $REPLY =~ ^[Yy]$ ]]
+then
+	echo "Exiting without signing."
+	exit 1
+fi
+
+echo "Signing and uploading."
+
+sign_and_queue_upload Windows exe "updater"
+sign_and_queue_upload Windows zip "release"
+sign_and_queue_upload Linux sfx "updater"
+sign_and_queue_upload Linux tar.gz "release"
+sign_and_queue_upload MacOS app.sfx "updater"
+sign_and_queue_upload MacOS dmg "release"
+
+execute_all_uploads
+
+popd
+
+if [[ "$SET_TO_LATEST_FLAG" == "--set-to-latest" ]]; then
+	./set_latest_version $REFERENCE_VERSION
+fi
