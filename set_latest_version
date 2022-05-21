@@ -1,4 +1,5 @@
 #!/bin/bash
-. ./ADDRESS
-VERSION=$1
-ssh $ADDRESS "admin-shell/set_latest_version"
+./sync_repo
+
+local VERSION=$1
+ssh $ADDRESS "remote-shell/set_latest_version $VERSION"

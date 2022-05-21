@@ -1,7 +1,7 @@
 #!/bin/bash
 
-. ~/admin-shell/ADDRESS
-. ~/admin-shell/interrupt_all.sh
+. ~/remote-shell/ADDRESS
+. ~/remote-shell/interrupt_all.sh
 
 rm Hypersomnia-for-Linux.sfx
 wget $DOWNLOADS_HOST/builds/latest/Hypersomnia-for-Linux.sfx
@@ -9,8 +9,8 @@ chmod +x ./Hypersomnia-for-Linux.sfx
 rm -rf hypersomnia
 ./Hypersomnia-for-Linux.sfx
 mkdir hypersomnia/user
-cp admin-shell/user/* hypersomnia/user/
+cp remote-shell/user/* hypersomnia/user/
 cd hypersomnia
 
-. ~/admin-shell/run_dedicated.sh
-. ~/admin-shell/run_masterserver.sh
+. ~/remote-shell/run_dedicated.sh
+. ~/remote-shell/run_masterserver.sh

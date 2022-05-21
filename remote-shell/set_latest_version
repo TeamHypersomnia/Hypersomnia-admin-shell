@@ -1,0 +1,9 @@
+#!/bin/bash
+VERSION=$1
+BUILDS=/var/www/html/builds
+
+cd $BUILDS
+LATEST="latest"
+
+sudo rm $LATEST
+sudo ln -s $VERSION $LATEST

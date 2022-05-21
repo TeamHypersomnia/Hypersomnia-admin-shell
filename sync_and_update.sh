@@ -1,2 +1,2 @@
-. ./sync_repo.sh
-ssh $ADDRESS "admin-shell/update_hypersomnia"
+./sync_repo
+ssh $ADDRESS "remote-shell/update_hypersomnia"

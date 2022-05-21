@@ -1,2 +1,2 @@
-. ./sync_repo.sh
-ssh $ADDRESS "admin-shell/restart_servers"
+./sync_repo
+ssh $ADDRESS "remote-shell/restart_servers"
