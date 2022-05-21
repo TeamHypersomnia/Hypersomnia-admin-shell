@@ -121,7 +121,7 @@ sign_and_version() {
 	mv $FILE_PATH $OUTPUT_FOLDER
 }
 
-SKIP_DOWNLOADING=1
+SKIP_DOWNLOADING=0
 
 if [[ "$SKIP_DOWNLOADING" == "0" ]]; then
 	rm -rf /tmp/hypersomnia-deployment
