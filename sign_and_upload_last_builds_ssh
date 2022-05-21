@@ -12,23 +12,30 @@ pushd  /tmp/hypersomnia-deployment
 APPVEYOR_PATH="https://ci.appveyor.com/api/projects/geneotech/Hypersomnia/artifacts"
 WORKFLOWS_PATH="https://nightly.link/TeamHypersomnia/Hypersomnia/workflows"
 
+curl_dl_silent() {
+	URL_LEFT=$1
+	FILENAME=$2
+	FINAL_URL="${URL_LEFT}${FILENAME}"
+
+	echo "Downloading $FILENAME..."
+	curl --progress-bar -o "download_$FILENAME.output.log" $FINAL_URL
+}
+
 download_from_appveyor() {
 	local PLATFORM="Windows"
 
 	mkdir binaries-$PLATFORM
 	pushd binaries-$PLATFORM
-	wget "$APPVEYOR_PATH/Hypersomnia-for-$PLATFORM.exe"
-	wget "$APPVEYOR_PATH/Hypersomnia-for-$PLATFORM.zip"
-	wget "$APPVEYOR_PATH/$VERSION_FILENAME"
+	curl_dl_silent "$APPVEYOR_PATH/" "Hypersomnia-for-$PLATFORM.exe"
+	curl_dl_silent "$APPVEYOR_PATH/" "Hypersomnia-for-$PLATFORM.zip"
+	curl_dl_silent "$APPVEYOR_PATH/" "$VERSION_FILENAME"
 	dos2unix $VERSION_FILENAME
 	popd
 }
 
 download_from_github_actions() {
 	local PLATFORM=$1
-	local PLATFORM_PATH="$WORKFLOWS_PATH/${PLATFORM}_build/master/binaries.zip"
-
-	wget $PLATFORM_PATH
+	curl_dl_silent "$WORKFLOWS_PATH/${PLATFORM}_build/master/" "$PLATFORM-binaries.zip"
 
 	unzip binaries.zip -d binaries-$PLATFORM
 	pushd binaries-$PLATFORM/
@@ -41,12 +48,14 @@ download_from_github_actions() {
 sign_platform_file() {
 	local PLATFORM=$1
 	local FILE_PATH=$2
+	local SIGN_NAMESPACE=$3
 
 	local SIGNATURE_BIN_PATH=""
 	SIGNATURE_TXT_PATH="$FILE_PATH.asc"
 
 	echo "Signing $FILE_PATH"
-	gpg --armor --output $SIGNATURE_TXT_PATH --detach-sig $FILE_PATH
+
+	trezor-agent -e ed25519 hypersomnia -- ssh-keygen -vvv -Y sign -f ~/.ssh/trezor-hypersomnia.pub -n $SIGN_NAMESPACE $FILE_PATH
 }
 
 read_version() {
@@ -78,7 +87,13 @@ sign_and_queue_upload() {
 	local FOLDER="binaries-$PLATFORM"
 	local FILE_PATH="$FOLDER/Hypersomnia-for-$PLATFORM.$EXTENSION"
 
-	sign_platform_file $PLATFORM $FILE_PATH
+	SIGN_NAMESPACE="hypersomnia"
+
+	if [[ "$ARTIFACT_TYPE" == "updater" ]]; then
+		SIGN_NAMESPACE="self_updater"
+	fi
+
+	sign_platform_file $PLATFORM $FILE_PATH $SIGN_NAMESPACE
 	read_version $PLATFORM
 
 	PLATFORMS+=($PLATFORM)
@@ -92,7 +107,7 @@ execute_all_uploads() {
 	local UPLOAD_URL="$DOWNLOADS_HOST/upload_artifact.php"
 
 	for i in "${!ARTIFACTS[@]}"; do 
-		local UPLOADED_FILE = ${ARTIFACTS[$i]}
+		local UPLOADED_FILE=${ARTIFACTS[$i]}
 		echo "Uploading $UPLOADED_FILE..."
 
 		curl --progress-bar -o "upload_${UPLOADED_FILE}.output.log" -F "key=$UPLOAD_API_KEY" -F "platform=${PLATFORMS[$i]}" -F "version=${VERSIONS[$i]}" -F "artifact=@${UPLOADED_FILE}" -F "artifact_type=${ARTIFACT_TYPES[$i]}" -F "signature=@${SIGNATURES[$i]}" $UPLOAD_URL | cat
