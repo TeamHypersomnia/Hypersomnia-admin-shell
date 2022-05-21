@@ -1,2 +1,3 @@
 ADDRESS=ubuntu@hypersomnia.xyz
 DOWNLOADS_HOST=https://hypersomnia.xyz
+BUILDS_DIR=/var/www/html/builds

@@ -1,12 +1,16 @@
 #!/bin/bash
 . ./ADDRESS
 
+. ./developer_sign_file
+. ./developer_upload_version_folder
+
 UPLOAD_API_KEY=$1
 SET_TO_LATEST_FLAG=$2
-VERSION_FILENAME="release_notes.txt"
+RELEASE_NOTES_FILENAME="release_notes.txt"
 
 rm -rf /tmp/hypersomnia-deployment
 mkdir  /tmp/hypersomnia-deployment
+mkdir  /tmp/hypersomnia-deployment/versions
 pushd  /tmp/hypersomnia-deployment
 
 APPVEYOR_PATH="https://ci.appveyor.com/api/projects/geneotech/Hypersomnia/artifacts"
@@ -28,8 +32,8 @@ download_from_appveyor() {
 	pushd binaries-$PLATFORM
 	curl_dl_silent "$APPVEYOR_PATH/" "Hypersomnia-for-$PLATFORM.exe"
 	curl_dl_silent "$APPVEYOR_PATH/" "Hypersomnia-for-$PLATFORM.zip"
-	curl_dl_silent "$APPVEYOR_PATH/" "$VERSION_FILENAME"
-	dos2unix $VERSION_FILENAME
+	curl_dl_silent "$APPVEYOR_PATH/" "$RELEASE_NOTES_FILENAME"
+	dos2unix $RELEASE_NOTES_FILENAME
 	popd
 }
 
@@ -39,7 +43,7 @@ download_from_github_actions() {
 
 	unzip binaries.zip -d binaries-$PLATFORM
 	pushd binaries-$PLATFORM/
-	mv hypersomnia/$VERSION_FILENAME ./
+	mv hypersomnia/$RELEASE_NOTES_FILENAME ./
 	rmdir hypersomnia
 	popd
 	rm binaries.zip
@@ -50,18 +54,15 @@ sign_platform_file() {
 	local FILE_PATH=$2
 	local SIGN_NAMESPACE=$3
 
-	local SIGNATURE_BIN_PATH=""
-	SIGNATURE_TXT_PATH="$FILE_PATH.asc"
-
 	echo "Signing $FILE_PATH"
-
-	trezor-agent -e ed25519 hypersomnia -- ssh-keygen -vvv -Y sign -f ~/.ssh/trezor-hypersomnia.pub -n $SIGN_NAMESPACE $FILE_PATH
+	SIGNATURE_FILE_PATH="$FILE_PATH.sig"
+	developer_sign_file $SIGN_NAMESPACE $FILE_PATH
 }
 
 read_version() {
 	local PLATFORM=$1
 
-	local VERSION_PATH="binaries-$PLATFORM/$VERSION_FILENAME"
+	local VERSION_PATH="binaries-$PLATFORM/$RELEASE_NOTES_FILENAME"
 	VERSION=$(head -n 1 $VERSION_PATH)
 }
 
@@ -71,15 +72,19 @@ print_version() {
 	echo "$1 version: $VERSION"
 }
 
-CURL_COMMANDS="curl_commands.txt"
+create_version_file() {
+	PLATFORM=$1
+	SIGNATURE_FILE_PATH=$2
 
-PLATFORMS=()
-VERSIONS=()
-ARTIFACTS=()
-ARTIFACT_TYPES=()
-SIGNATURES=()
+	read_version $PLATFORM
 
-sign_and_queue_upload() {
+	VERSION_FILE_PATH="versions/version-$PLATFORM.txt"
+	echo $VERSION > $VERSION_FILE_PATH
+	echo "Signature:" >> $VERSION_FILE_PATH
+	cat $SIGNATURE_FILE_PATH >> $VERSION_FILE_PATH
+}
+
+sign_and_version() {
 	local PLATFORM=$1
 	local EXTENSION=$2
 	local ARTIFACT_TYPE=$3
@@ -94,24 +99,21 @@ sign_and_queue_upload() {
 	fi
 
 	sign_platform_file $PLATFORM $FILE_PATH $SIGN_NAMESPACE
-	read_version $PLATFORM
 
-	PLATFORMS+=($PLATFORM)
-	VERSIONS+=($VERSION)
-	ARTIFACTS+=($FILE_PATH)
-	ARTIFACT_TYPES+=($ARTIFACT_TYPE)
-	SIGNATURES+=($SIGNATURE_TXT_PATH)
+	if [[ "$ARTIFACT_TYPE" == "release" ]]; then
+		create_version_file $PLATFORM $SIGNATURE_FILE_PATH
+	fi
 }
 
-execute_all_uploads() {
-	local UPLOAD_URL="$DOWNLOADS_HOST/upload_artifact.php"
+upload_as_version() {
+	local AS_VERSION=$1
+	mkdir $AS_VERSION
 
-	for i in "${!ARTIFACTS[@]}"; do 
-		local UPLOADED_FILE=${ARTIFACTS[$i]}
-		echo "Uploading $UPLOADED_FILE..."
+	mv binaries-*/* $AS_VERSION
+	mv versions/* $AS_VERSION
 
-		curl --progress-bar -o "upload_${UPLOADED_FILE}.output.log" -F "key=$UPLOAD_API_KEY" -F "platform=${PLATFORMS[$i]}" -F "version=${VERSIONS[$i]}" -F "artifact=@${UPLOADED_FILE}" -F "artifact_type=${ARTIFACT_TYPES[$i]}" -F "signature=@${SIGNATURES[$i]}" $UPLOAD_URL | cat
-	done
+	REMOTE_VERSION_DIR="$BUILDS_DIR/$AS_VERSION"
+	developer_upload_version_folder $AS_VERSION $REMOTE_VERSION_DIR
 }
 
 download_from_appveyor
@@ -142,14 +144,14 @@ fi
 
 echo "Signing and uploading."
 
-sign_and_queue_upload Windows exe "updater"
-sign_and_queue_upload Windows zip "release"
-sign_and_queue_upload Linux sfx "updater"
-sign_and_queue_upload Linux tar.gz "release"
-sign_and_queue_upload MacOS app.sfx "updater"
-sign_and_queue_upload MacOS dmg "release"
+sign_and_version Windows exe "updater"
+sign_and_version Windows zip "release"
+sign_and_version Linux sfx "updater"
+sign_and_version Linux tar.gz "release"
+sign_and_version MacOS app.sfx "updater"
+sign_and_version MacOS dmg "release"
 
-execute_all_uploads
+upload_as_version $REFERENCE_VERSION
 
 popd
 
