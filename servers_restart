@@ -1,0 +1,2 @@
+. ./developer_remote_shell.sh
+call_remote restart_servers

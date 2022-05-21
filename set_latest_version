@@ -1,5 +1,4 @@
 #!/bin/bash
-./sync_repo
-
-local VERSION=$1
-ssh $ADDRESS "remote-shell/set_latest_version $VERSION"
+VERSION=$1
+. ./developer_remote_shell.sh
+call_remote "set_latest_version $VERSION"

@@ -5,5 +5,5 @@ BUILDS=/var/www/html/builds
 cd $BUILDS
 LATEST="latest"
 
-sudo rm $LATEST
-sudo ln -s $VERSION $LATEST
+sudo -u www-data rm $LATEST
+sudo -u www-data ln -s $VERSION $LATEST
