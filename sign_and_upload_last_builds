@@ -1,52 +1,63 @@
 #!/bin/bash
+SET_TO_LATEST_FLAG=$1
+
 . ./ADDRESS
+. ./developer_sign_file.sh
+. ./developer_upload_version_folder.sh
 
-. ./developer_sign_file
-. ./developer_upload_version_folder
-
-UPLOAD_API_KEY=$1
-SET_TO_LATEST_FLAG=$2
 RELEASE_NOTES_FILENAME="release_notes.txt"
-
-rm -rf /tmp/hypersomnia-deployment
-mkdir  /tmp/hypersomnia-deployment
-mkdir  /tmp/hypersomnia-deployment/versions
-pushd  /tmp/hypersomnia-deployment
 
 APPVEYOR_PATH="https://ci.appveyor.com/api/projects/geneotech/Hypersomnia/artifacts"
 WORKFLOWS_PATH="https://nightly.link/TeamHypersomnia/Hypersomnia/workflows"
 
-curl_dl_silent() {
+APPVEYOR_FILES=("Hypersomnia-for-Windows.exe" "Hypersomnia-for-Windows.zip" $RELEASE_NOTES_FILENAME)
+
+download_file() {
 	URL_LEFT=$1
 	FILENAME=$2
 	FINAL_URL="${URL_LEFT}${FILENAME}"
+	LOG_FILENAME="$FILENAME.download.log"
 
-	echo "Downloading $FILENAME..."
-	curl --progress-bar -o "download_$FILENAME.output.log" $FINAL_URL
+	echo "wget $FINAL_URL"
+	#echo "Downloading $FILENAME..."
+	wget --show-progress $FINAL_URL -o $LOG_FILENAME
 }
 
 download_from_appveyor() {
 	local PLATFORM="Windows"
 
-	mkdir binaries-$PLATFORM
-	pushd binaries-$PLATFORM
-	curl_dl_silent "$APPVEYOR_PATH/" "Hypersomnia-for-$PLATFORM.exe"
-	curl_dl_silent "$APPVEYOR_PATH/" "Hypersomnia-for-$PLATFORM.zip"
-	curl_dl_silent "$APPVEYOR_PATH/" "$RELEASE_NOTES_FILENAME"
+	for i in "${APPVEYOR_FILES[@]}"
+	do
+		download_file "$APPVEYOR_PATH/" $i
+	done
+		
 	dos2unix $RELEASE_NOTES_FILENAME
-	popd
 }
 
 download_from_github_actions() {
 	local PLATFORM=$1
-	curl_dl_silent "$WORKFLOWS_PATH/${PLATFORM}_build/master/" "$PLATFORM-binaries.zip"
+	download_file "$WORKFLOWS_PATH/${PLATFORM}_build/master/" "$PLATFORM-binaries.zip"
+}
 
-	unzip binaries.zip -d binaries-$PLATFORM
+unpack_from_appveyor() {
+	local PLATFORM="Windows"
+	mkdir binaries-$PLATFORM
+
+	for i in "${APPVEYOR_FILES[@]}"
+	do
+		cp $i binaries-$PLATFORM
+	done
+}
+
+unpack_from_github_actions() {
+	local PLATFORM=$1
+	rm -rf binaries-$PLATFORM
+	unzip $PLATFORM-binaries.zip -d binaries-$PLATFORM
+
 	pushd binaries-$PLATFORM/
 	mv hypersomnia/$RELEASE_NOTES_FILENAME ./
 	rmdir hypersomnia
 	popd
-	rm binaries.zip
 }
 
 sign_platform_file() {
@@ -78,7 +89,9 @@ create_version_file() {
 
 	read_version $PLATFORM
 
-	VERSION_FILE_PATH="versions/version-$PLATFORM.txt"
+	VERSION_FILE_PATH="$OUTPUT_FOLDER/version-$PLATFORM.txt"
+
+	echo "Writing a version file $VERSION_FILE_PATH using signature $SIGNATURE_FILE_PATH..."
 	echo $VERSION > $VERSION_FILE_PATH
 	echo "Signature:" >> $VERSION_FILE_PATH
 	cat $SIGNATURE_FILE_PATH >> $VERSION_FILE_PATH
@@ -100,25 +113,34 @@ sign_and_version() {
 
 	sign_platform_file $PLATFORM $FILE_PATH $SIGN_NAMESPACE
 
-	if [[ "$ARTIFACT_TYPE" == "release" ]]; then
+	if [[ "$ARTIFACT_TYPE" == "updater" ]]; then
 		create_version_file $PLATFORM $SIGNATURE_FILE_PATH
 	fi
+
+	mv $SIGNATURE_FILE_PATH $OUTPUT_FOLDER
+	mv $FILE_PATH $OUTPUT_FOLDER
 }
 
-upload_as_version() {
-	local AS_VERSION=$1
-	mkdir $AS_VERSION
+SKIP_DOWNLOADING=1
 
-	mv binaries-*/* $AS_VERSION
-	mv versions/* $AS_VERSION
+if [[ "$SKIP_DOWNLOADING" == "0" ]]; then
+	rm -rf /tmp/hypersomnia-deployment
+	mkdir  /tmp/hypersomnia-deployment
+fi
 
-	REMOTE_VERSION_DIR="$BUILDS_DIR/$AS_VERSION"
-	developer_upload_version_folder $AS_VERSION $REMOTE_VERSION_DIR
-}
+pushd /tmp/hypersomnia-deployment
 
-download_from_appveyor
-download_from_github_actions Linux
-download_from_github_actions MacOS
+if [[ "$SKIP_DOWNLOADING" == "0" ]]; then
+	download_from_github_actions Linux
+	download_from_github_actions MacOS
+	download_from_appveyor
+else
+	echo "SKIPPING DOWNLOAD! Re-using previously downloaded files."
+fi
+
+unpack_from_github_actions Linux
+unpack_from_github_actions MacOS
+unpack_from_appveyor
 
 print_version Windows
 print_version Linux
@@ -144,6 +166,11 @@ fi
 
 echo "Signing and uploading."
 
+OUTPUT_FOLDER=$REFERENCE_VERSION
+
+rm -rf $OUTPUT_FOLDER
+mkdir $OUTPUT_FOLDER
+
 sign_and_version Windows exe "updater"
 sign_and_version Windows zip "release"
 sign_and_version Linux sfx "updater"
@@ -151,10 +178,6 @@ sign_and_version Linux tar.gz "release"
 sign_and_version MacOS app.sfx "updater"
 sign_and_version MacOS dmg "release"
 
-upload_as_version $REFERENCE_VERSION
+developer_upload_version_folder $OUTPUT_FOLDER $REFERENCE_VERSION $SET_TO_LATEST_FLAG
 
 popd
-
-if [[ "$SET_TO_LATEST_FLAG" == "--set-to-latest" ]]; then
-	./set_latest_version $REFERENCE_VERSION
-fi

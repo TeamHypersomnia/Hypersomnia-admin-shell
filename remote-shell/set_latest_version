@@ -1,6 +1,6 @@
 #!/bin/bash
-VERSION=$1
 BUILDS=/var/www/html/builds
+VERSION=$1
 
 cd $BUILDS
 LATEST="latest"

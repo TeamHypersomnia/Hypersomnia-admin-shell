@@ -1,4 +1,4 @@
-user_sign_file() {
+developer_sign_file() {
 	local SIGN_NAMESPACE=$1
 	local FILE_PATH=$2
 
