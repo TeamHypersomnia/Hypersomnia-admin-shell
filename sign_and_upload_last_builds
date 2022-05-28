@@ -41,6 +41,7 @@ download_from_github_actions() {
 
 unpack_from_appveyor() {
 	local PLATFORM="Windows"
+	rm -rf binaries-$PLATFORM
 	mkdir binaries-$PLATFORM
 
 	for i in "${APPVEYOR_FILES[@]}"
@@ -75,6 +76,7 @@ read_version() {
 
 	local VERSION_PATH="binaries-$PLATFORM/$RELEASE_NOTES_FILENAME"
 	VERSION=$(head -n 1 $VERSION_PATH)
+	COMMIT_HASH=$(sed -n '2p' < $VERSION_PATH)
 }
 
 print_version() {
@@ -93,7 +95,7 @@ create_version_file() {
 
 	echo "Writing a version file $VERSION_FILE_PATH using signature $SIGNATURE_FILE_PATH..."
 	echo $VERSION > $VERSION_FILE_PATH
-	echo "Signature:" >> $VERSION_FILE_PATH
+	echo "Commit hash: $COMMIT_HASH" >> $VERSION_FILE_PATH
 	cat $SIGNATURE_FILE_PATH >> $VERSION_FILE_PATH
 }
 
@@ -121,21 +123,22 @@ sign_and_version() {
 	mv $FILE_PATH $OUTPUT_FOLDER
 }
 
-SKIP_DOWNLOADING=0
-
-if [[ "$SKIP_DOWNLOADING" == "0" ]]; then
-	rm -rf /tmp/hypersomnia-deployment
-	mkdir  /tmp/hypersomnia-deployment
+DEPLOYMENT_FOLDER="/tmp/hypersomnia-deployment"
+if [[ "$SKIP_DOWNLOADING" == "1" ]]; then
+	echo "Reusing $DEPLOYMENT_FOLDER" 
+else
+	rm -rf $DEPLOYMENT_FOLDER
+	mkdir  $DEPLOYMENT_FOLDER
 fi
 
 pushd /tmp/hypersomnia-deployment
 
-if [[ "$SKIP_DOWNLOADING" == "0" ]]; then
+if [[ "$SKIP_DOWNLOADING" == "1" ]]; then
+	echo "SKIPPING DOWNLOAD! Re-using previously downloaded files."
+else
 	download_from_github_actions Linux
 	download_from_github_actions MacOS
 	download_from_appveyor
-else
-	echo "SKIPPING DOWNLOAD! Re-using previously downloaded files."
 fi
 
 unpack_from_github_actions Linux
