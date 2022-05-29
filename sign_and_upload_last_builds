@@ -158,6 +158,9 @@ if [[ "$SET_TO_LATEST_FLAG" == "--set-to-latest" ]]; then
 	REFERENCE_NOTICE="Latest version will be set to $REFERENCE_VERSION. "
 fi
 
+# At some point all versions will NEED to be the same
+# for the game not to trigger warnings about binary compatibility.
+
 read -p "${REFERENCE_NOTICE}Sign and upload? (Yy/Nn) " -r
 
 echo

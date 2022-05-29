@@ -1,2 +1,1 @@
-ADDRESS=ubuntu@hypersomnia.xyz
-DOWNLOADS_HOST=https://hypersomnia.xyz
+ADDRESS="ubuntu@hypersomnia.xyz"
