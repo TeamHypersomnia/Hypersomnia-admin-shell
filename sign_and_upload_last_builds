@@ -31,7 +31,7 @@ download_from_appveyor() {
 		download_file "$APPVEYOR_PATH/" $i
 	done
 		
-	dos2unix $RELEASE_NOTES_FILENAME
+	#dos2unix $RELEASE_NOTES_FILENAME
 }
 
 download_from_github_actions() {
@@ -75,8 +75,18 @@ read_version() {
 	local PLATFORM=$1
 
 	local VERSION_PATH="binaries-$PLATFORM/$RELEASE_NOTES_FILENAME"
-	VERSION=$(head -n 1 $VERSION_PATH)
-	COMMIT_HASH=$(sed -n '2p' < $VERSION_PATH)
+
+	if [[ "$PLATFORM" == "Windows" ]]; then
+		local FIXED_PATH="$VERSION_PATH.dos"
+
+		cp $VERSION_PATH $FIXED_PATH
+		dos2unix $FIXED_PATH
+		VERSION=$(head -n 1 $FIXED_PATH)
+		COMMIT_HASH=$(sed -n '2p' < $FIXED_PATH)
+	else
+		VERSION=$(head -n 1 $VERSION_PATH)
+		COMMIT_HASH=$(sed -n '2p' < $VERSION_PATH)
+	fi
 }
 
 print_version() {
