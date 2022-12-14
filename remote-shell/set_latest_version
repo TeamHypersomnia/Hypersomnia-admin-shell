@@ -5,5 +5,7 @@ VERSION=$1
 cd $BUILDS
 LATEST="latest"
 
-sudo -u www-data rm $LATEST
-sudo -u www-data ln -s $VERSION $LATEST
+#sudo -u www-data rm $LATEST
+#sudo -u www-data ln -s $VERSION $LATEST
+rm $LATEST
+ln -s $VERSION $LATEST

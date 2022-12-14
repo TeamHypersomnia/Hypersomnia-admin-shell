@@ -6,7 +6,7 @@ TARGET_PATH="$BUILDS/$VERSION"
 
 sudo rm -rf $TARGET_PATH
 sudo mv ~/uploads/$VERSION $TARGET_PATH
-sudo chown -R www-data:www-data $TARGET_PATH
+#sudo chown -R www-data:www-data $TARGET_PATH
 
 if [[ "$SET_TO_LATEST_FLAG" == "--set-to-latest" ]]; then
 	~/remote-shell/set_latest_version $VERSION
