@@ -1,7 +1,7 @@
 . ./ADDRESS
 
 developer_remote_shell() {
-	trezor-agent -e ed25519 ubuntu@hypersomnia.xyz -- ssh $ADDRESS $@ 
+	ssh $ADDRESS $@ 
 }
 
 call_remote() {

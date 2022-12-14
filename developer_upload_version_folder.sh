@@ -6,7 +6,7 @@ developer_upload_version_folder() {
 	local SET_TO_LATEST_FLAG=$3
 
 	pushd $SOURCE_FOLDER
-	trezor-agent -e ed25519 ubuntu@hypersomnia.xyz -- rsync -avzP . $ADDRESS:~/uploads/$REFERENCE_VERSION
+	rsync -avzP . $ADDRESS:~/uploads/$REFERENCE_VERSION
 	popd
 
 	call_remote move_uploaded_file $REFERENCE_VERSION $SET_TO_LATEST_FLAG
