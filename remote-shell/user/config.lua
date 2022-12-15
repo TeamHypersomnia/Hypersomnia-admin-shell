@@ -10,7 +10,8 @@ return {
   private_server = {
     master_rcon_password = read_password(".rcon_password"),
     rcon_password = read_password(".rcon_password"),
-    webhook_url = read_password(".discord_webhook_url");
+    discord_webhook_url = read_password(".discord_webhook_url"),
+    telegram_webhook_url = read_password(".telegram_webhook_url")
   },
   server = {
     server_name = "arena.hypersomnia.xyz",

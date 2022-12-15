@@ -28,5 +28,6 @@ sudo apt-get install libc++-14-dev
 
 ~/.discord_webhook_url
 ~/.rcon_password
+~/.telegram_webhook_url
 
 Szczególnie jak nie ma webhooków discorda/rcona to trzeba jeszcze raz odpalić procedure całej aktualizacji serwera żeby skopiowało pliki usera i serwer podchwycił zmienne z tych plików jeszcze raz.
