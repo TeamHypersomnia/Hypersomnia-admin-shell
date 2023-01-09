@@ -29,3 +29,17 @@ to setup sensitive variables for the server. Just paste the value, e.g. ``echo "
 Restart the server and now 1234 is your server's RCON password.
 
 You can implement other sensitive fields yourself with the ``read_password`` function from inside ``config.force.lua``.
+
+## Folder structure
+
+The files in ``remote-shell`` are what gets sent to the remote server upon ``./sync_repo``.
+These are never executed on your local machine.
+They're called directly on the server in response to your commands.
+
+You're only supposed to use the executable files without extension in the repository's folder - these are your public interface that lets you control the server from your local machine, e.g.:
+
+``./servers_update``
+
+``./servers_restart``
+
+``./sign_and_upload_last_builds``
