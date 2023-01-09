@@ -11,6 +11,7 @@ If you're setting up for the first time, call ``./servers_update`` to automatica
 ## Server configuration
 
 Use ``remote-shell/user/config.force.lua`` to configure both the masterserver and the dedicated server (it's the same binary).
+Unlike ``user/config.lua``, which is used to both read and store user settings (possibly applied when the server is running), ``user/config.force.lua`` will _never_ be overwritten by the game when it quits.
 
 The entire ``remote-shell/user`` folder, along with the config inside, will be copied to Hypersomnia server's ``user`` folder (``hypersomnia/user``) upon ``./servers_update``.
 
