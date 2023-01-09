@@ -2,11 +2,11 @@
 
 ## Setup
 
-1. Modify ADDRESS file to point to your SSH user on the remote server e.g. ``ADDRESS="ubuntu@my-hypersomnia-server.com"``
+1. Modify ``ADDRESS`` file to point to your SSH user on the remote server e.g. ``ADDRESS="ubuntu@my-hypersomnia-server.com"``
 2. Execute ``./sync_repo``. This will setup essential scripts on the remote server.
-3. Now you can execute ``./servers_update `,`./servers_restart`` and other administrative tasks. All files without extension are your public interface.
+3. Now you can execute ``./servers_update ``, ``./servers_restart`` and other administrative tasks. All files without extension are your public interface.
 
-If server is not yet running, call ``./servers_update`` to automatically download the latest binary and launch the dedicated server and the masterserver.
+If you're setting up for the first time, call ``./servers_update`` to automatically download the latest binary and launch the dedicated server and the masterserver.
 
 ## Server configuration
 
