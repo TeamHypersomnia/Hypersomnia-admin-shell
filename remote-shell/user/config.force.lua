@@ -20,6 +20,6 @@ return {
     suppress_new_community_server_webhook = true
   },
   default_server_start = {
-	port = 8412
+    port = 8412
   }
 }
