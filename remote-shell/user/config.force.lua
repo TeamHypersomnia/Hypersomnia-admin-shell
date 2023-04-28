@@ -13,6 +13,9 @@ return {
     discord_webhook_url = read_password(".discord_webhook_url"),
     telegram_webhook_url = read_password(".telegram_webhook_url")
   },
+  server_start = {
+    port = 8412
+  },
   server = {
     server_name = "arena.hypersomnia.xyz",
     max_client_resyncs = 1000,
@@ -21,8 +24,5 @@ return {
   },
   server_solvable = {
     current_arena = "de_cyberaqua"
-  },
-  default_server_start = {
-    port = 8412
   }
 }
