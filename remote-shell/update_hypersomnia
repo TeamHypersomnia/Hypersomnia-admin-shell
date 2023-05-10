@@ -10,6 +10,7 @@ rm -rf hypersomnia
 ./Hypersomnia-for-Linux.sfx
 mkdir hypersomnia/user
 cp remote-shell/user/* hypersomnia/user/
+cp custom_arenas/* hypersomnia/content/arenas/
 cd hypersomnia
 
 . ~/remote-shell/run_dedicated.sh
