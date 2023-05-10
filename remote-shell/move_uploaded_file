@@ -13,5 +13,5 @@ if [[ "$SET_TO_LATEST_FLAG" == "--set-to-latest" ]]; then
 
 	export WEBHOOK_URL=$(cat ~/.update_notification_webhook_url)
 
-	curl -F 'payload_json={ "username": "https://hypersomnia.xyz/builds", "embeds": [{ "author": {"name": "'"$VERSION"'"}, "thumbnail": { "url": "https://cdn.discordapp.com/attachments/284466566874267649/1061035478800928780/image.png" }, "color":  52224, "title": "Update available!", "description": "Hypersomnia will install updates on the next launch."} ] }' $WEBHOOK_URL
+	curl -F 'payload_json={ "username": "Downloads page", "embeds": [{ "author": {"name": "'"$VERSION"'"}, "thumbnail": { "url": "https://cdn.discordapp.com/attachments/284466566874267649/1061035478800928780/image.png" }, "color":  52224, "title": "Update available!", "description": "Hypersomnia will install updates on the next launch."} ] }' $WEBHOOK_URL
 fi
