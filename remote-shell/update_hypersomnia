@@ -1,17 +1,31 @@
 #!/bin/bash
 
 . ~/remote-shell/ADDRESS
-. ~/remote-shell/interrupt_all.sh
 
-rm Hypersomnia-for-Linux.sfx
+rm -rf update_temp
+mkdir update_temp
+
+cd update_temp
+
 wget $DOWNLOADS_HOST/builds/latest/Hypersomnia-for-Linux.sfx
 chmod +x ./Hypersomnia-for-Linux.sfx
-rm -rf hypersomnia
 ./Hypersomnia-for-Linux.sfx
+
 mkdir hypersomnia/user
-cp remote-shell/user/* hypersomnia/user/
-cp custom_arenas/* hypersomnia/content/arenas/
-cd hypersomnia
+cp ~/remote-shell/user/* hypersomnia/user/
+cp -r ~/custom_arenas/* hypersomnia/content/arenas/
+
+cd ..
+
+. ~/remote-shell/interrupt_all.sh
+
+rm -rf hypersomnia
+
+mv update_temp/hypersomnia hypersomnia
+
+pushd hypersomnia
 
 . ~/remote-shell/run_dedicated.sh
 . ~/remote-shell/run_masterserver.sh
+
+popd
