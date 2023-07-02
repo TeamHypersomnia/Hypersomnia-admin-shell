@@ -22,7 +22,7 @@ return {
 
   server = {
     arena = "de_cyberaqua",
-    mode = "gun_game",
+    game_mode = "gun_game",
     server_name = "arena.hypersomnia.xyz",
     max_client_resyncs = 1000,
     allow_nat_traversal = false,
