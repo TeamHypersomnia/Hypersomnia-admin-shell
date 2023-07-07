@@ -23,7 +23,7 @@ return {
   server = {
     arena = "de_cyberaqua",
     game_mode = "gun_game",
-    server_name = "arena.hypersomnia.xyz",
+    server_name = "[PL] arena.hypersomnia.xyz",
     max_client_resyncs = 1000,
     allow_nat_traversal = false,
     suppress_new_community_server_webhook = true
