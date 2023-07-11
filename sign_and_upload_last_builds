@@ -62,9 +62,8 @@ unpack_from_github_actions() {
 }
 
 sign_platform_file() {
-	local PLATFORM=$1
-	local FILE_PATH=$2
-	local SIGN_NAMESPACE=$3
+	local FILE_PATH=$1
+	local SIGN_NAMESPACE=$2
 
 	echo "Signing $FILE_PATH"
 	SIGNATURE_FILE_PATH="$FILE_PATH.sig"
@@ -123,11 +122,23 @@ sign_and_version() {
 		SIGN_NAMESPACE="self_updater"
 	fi
 
-	sign_platform_file $PLATFORM $FILE_PATH $SIGN_NAMESPACE
+	sign_platform_file $FILE_PATH $SIGN_NAMESPACE
 
 	if [[ "$ARTIFACT_TYPE" == "updater" ]]; then
 		create_version_file $PLATFORM $SIGNATURE_FILE_PATH
 	fi
+
+	mv $SIGNATURE_FILE_PATH $OUTPUT_FOLDER
+	mv $FILE_PATH $OUTPUT_FOLDER
+}
+
+sign_and_version_AppImage() {
+	local FILE_PATH="binaries-Linux/Hypersomnia.AppImage"
+	SIGN_NAMESPACE="self_updater"
+
+	sign_platform_file $FILE_PATH $SIGN_NAMESPACE
+	create_version_file Linux $SIGNATURE_FILE_PATH
+	mv "$OUTPUT_FOLDER/version-Linux.txt" "$OUTPUT_FOLDER/version-AppImage.txt"
 
 	mv $SIGNATURE_FILE_PATH $OUTPUT_FOLDER
 	mv $FILE_PATH $OUTPUT_FOLDER
@@ -187,6 +198,7 @@ OUTPUT_FOLDER=$REFERENCE_VERSION
 rm -rf $OUTPUT_FOLDER
 mkdir $OUTPUT_FOLDER
 
+sign_and_version_AppImage
 sign_and_version Windows exe "updater"
 sign_and_version Windows zip "release"
 sign_and_version Linux sfx "updater"
