@@ -174,7 +174,10 @@ upload_to_steam() {
 	mkdir $CONTENT/linux
 	mkdir $CONTENT/macos
 
-	cp "binaries-Linux/Hypersomnia.AppImage" $CONTENT/linux
+	local APPIMAGE="binaries-Linux/Hypersomnia.AppImage"
+	chmod +x $APPIMAGE
+	cp $APPIMAGE $CONTENT/linux
+
 	unzip "binaries-Windows/Hypersomnia-for-Windows.zip" -d $CONTENT/windows
 
 	pushd binaries-MacOS
