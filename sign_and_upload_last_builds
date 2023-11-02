@@ -1,6 +1,10 @@
 #!/bin/bash
 SET_TO_LATEST_FLAG=$1
 
+# Directory where this script is located
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+echo "Script dir: $SCRIPT_DIR"
+
 . ./ADDRESS
 . ./developer_sign_file.sh
 . ./developer_upload_version_folder.sh
@@ -122,26 +126,67 @@ sign_and_version() {
 		SIGN_NAMESPACE="self_updater"
 	fi
 
-	sign_platform_file $FILE_PATH $SIGN_NAMESPACE
+	if [[ "$SKIP_SIGNING" == "1" ]]; then
+		echo "Skipping signing due to SKIP_SIGNING specified."
+	else
+		sign_platform_file $FILE_PATH $SIGN_NAMESPACE
 
-	if [[ "$ARTIFACT_TYPE" == "updater" ]]; then
-		create_version_file $PLATFORM $SIGNATURE_FILE_PATH
+		if [[ "$ARTIFACT_TYPE" == "updater" ]]; then
+			create_version_file $PLATFORM $SIGNATURE_FILE_PATH
+		fi
+
+		mv $SIGNATURE_FILE_PATH $OUTPUT_FOLDER
 	fi
 
-	mv $SIGNATURE_FILE_PATH $OUTPUT_FOLDER
-	mv $FILE_PATH $OUTPUT_FOLDER
+	cp $FILE_PATH $OUTPUT_FOLDER
 }
 
 sign_and_version_AppImage() {
 	local FILE_PATH="binaries-Linux/Hypersomnia.AppImage"
 	SIGN_NAMESPACE="self_updater"
 
-	sign_platform_file $FILE_PATH $SIGN_NAMESPACE
-	create_version_file Linux $SIGNATURE_FILE_PATH
-	mv "$OUTPUT_FOLDER/version-Linux.txt" "$OUTPUT_FOLDER/version-AppImage.txt"
+	if [[ "$SKIP_SIGNING" == "1" ]]; then
+		echo "Skipping signing due to SKIP_SIGNING specified."
+	else
+		sign_platform_file $FILE_PATH $SIGN_NAMESPACE
 
-	mv $SIGNATURE_FILE_PATH $OUTPUT_FOLDER
-	mv $FILE_PATH $OUTPUT_FOLDER
+		create_version_file Linux $SIGNATURE_FILE_PATH
+		mv "$OUTPUT_FOLDER/version-Linux.txt" "$OUTPUT_FOLDER/version-AppImage.txt"
+
+		mv $SIGNATURE_FILE_PATH $OUTPUT_FOLDER
+	fi
+
+	cp $FILE_PATH $OUTPUT_FOLDER
+}
+
+upload_to_steam() {
+	local SDK="$SCRIPT_DIR/steamworks/sdk"
+	local CONTENT_BUILDER="$SDK/tools/ContentBuilder"
+	cp $SCRIPT_DIR/vdf/app_build.vdf $CONTENT_BUILDER/scripts
+
+	local CONTENT="$CONTENT_BUILDER/content"
+	local STEAMCMD_DIR="$CONTENT_BUILDER/builder_linux"
+
+	rm -rf $CONTENT
+	mkdir $CONTENT
+
+	mkdir $CONTENT/windows
+	mkdir $CONTENT/linux
+	mkdir $CONTENT/macos
+
+	cp "binaries-Linux/Hypersomnia.AppImage" $CONTENT/linux
+	unzip "binaries-Windows/Hypersomnia-for-Windows.zip" -d $CONTENT/windows
+
+	pushd binaries-MacOS
+	7z x Hypersomnia-for-MacOS.app.sfx
+	mv Hypersomnia.app $CONTENT/macos
+	popd
+
+	pushd $STEAMCMD_DIR
+
+	./steamcmd.sh +login $STEAM_LOGIN +run_app_build ../scripts/app_build.vdf +quit
+
+	popd
 }
 
 DEPLOYMENT_FOLDER="/tmp/hypersomnia-deployment"
@@ -198,6 +243,11 @@ OUTPUT_FOLDER=$REFERENCE_VERSION
 rm -rf $OUTPUT_FOLDER
 mkdir $OUTPUT_FOLDER
 
+if [[ "$UPLOAD_TO_STEAM" == "1" ]]; then
+	message "Uploading to Steam."
+	upload_to_steam
+fi
+
 sign_and_version_AppImage
 sign_and_version Windows exe "updater"
 sign_and_version Windows zip "release"
@@ -206,6 +256,10 @@ sign_and_version Linux tar.gz "release"
 sign_and_version MacOS app.sfx "updater"
 sign_and_version MacOS dmg "release"
 
-developer_upload_version_folder $OUTPUT_FOLDER $REFERENCE_VERSION $SET_TO_LATEST_FLAG
+if [[ "$SKIP_UPLOADING" == "1" ]]; then
+	echo "Skipping uploading due to SKIP_UPLOADING specified."
+else
+	developer_upload_version_folder $OUTPUT_FOLDER $REFERENCE_VERSION $SET_TO_LATEST_FLAG
+fi
 
 popd

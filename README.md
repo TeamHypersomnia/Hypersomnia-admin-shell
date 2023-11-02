@@ -44,4 +44,11 @@ You're only supposed to use the executable files without extension in the reposi
 
 ``./servers_restart``
 
-``./sign_and_upload_last_builds``
+### ``./sign_and_upload_last_builds``
+
+If you want to publish to Steam, do this before calling this script:
+
+- Call ``./steamcmd.sh +login mylogin`` just once to login to Steam.
+- Add ``export UPLOAD_TO_STEAM=1`` right before calling ``./sign_and_upload_last_builds``.
+- Also add ``export STEAM_LOGIN=mylogin`` as it will be needed when calling ``steamcmd.sh``, but it won't prompt you for password again.
+

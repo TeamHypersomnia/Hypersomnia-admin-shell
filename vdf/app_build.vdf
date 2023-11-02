@@ -1,0 +1,41 @@
+"AppBuild"
+{
+	"AppID" "2660970" // your AppID
+	"Desc" "This is a simple build script" // internal description for this build
+
+	"ContentRoot" "..\content\" // root content folder, relative to location of this file
+	"BuildOutput" "..\output\" // build output folder for build logs and build cache files
+
+	"Depots"
+	{
+		"2660971"
+		{
+			"FileMapping"
+			{
+				"LocalPath" "windows\hypersomnia\*"
+				"DepotPath" "."
+				"recursive" "1"
+			}
+		}
+
+		"2660972"
+		{
+			"FileMapping"
+			{
+				"LocalPath" "linux\*"
+				"DepotPath" "."
+				"recursive" "1"
+			}
+		}
+
+		"2660973"
+		{
+			"FileMapping"
+			{
+				"LocalPath" "macos\*"
+				"DepotPath" "."
+				"recursive" "1"
+			}
+		}
+	}
+}
