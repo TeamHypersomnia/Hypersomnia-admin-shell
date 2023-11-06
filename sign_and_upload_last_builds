@@ -14,6 +14,8 @@ RELEASE_NOTES_FILENAME="release_notes.txt"
 APPVEYOR_PATH="https://ci.appveyor.com/api/projects/geneotech/Hypersomnia/artifacts"
 WORKFLOWS_PATH="https://nightly.link/TeamHypersomnia/Hypersomnia/workflows"
 
+LIBSTEAM_INTEGRATION_BIN_LINK="https://github.com/TeamHypersomnia/Hypersomnia/raw/master/cmake/steam_integration/bin"
+
 APPVEYOR_FILES=("Hypersomnia-for-Windows.exe" "Hypersomnia-for-Windows.zip" $RELEASE_NOTES_FILENAME)
 
 download_file() {
@@ -57,12 +59,13 @@ unpack_from_appveyor() {
 unpack_from_github_actions() {
 	local PLATFORM=$1
 	rm -rf binaries-$PLATFORM
-	unzip $PLATFORM-binaries.zip -d binaries-$PLATFORM
 
-	pushd binaries-$PLATFORM/
-	mv hypersomnia/$RELEASE_NOTES_FILENAME ./
-	rmdir hypersomnia
-	popd
+	if unzip $PLATFORM-binaries.zip -d binaries-$PLATFORM; then
+		pushd binaries-$PLATFORM/
+			mv hypersomnia/$RELEASE_NOTES_FILENAME ./
+			rmdir hypersomnia
+		popd
+	fi
 }
 
 sign_platform_file() {
@@ -159,13 +162,36 @@ sign_and_version_AppImage() {
 	cp $FILE_PATH $OUTPUT_FOLDER
 }
 
+repack_appimage_for_steam() {
+	echo "Repacking AppImage for Steam release."
+	local SDK="$SCRIPT_DIR/steamworks/sdk"
+
+	./Hypersomnia.AppImage --appimage-extract
+
+	if [ ! -f appimagetool-x86_64.AppImage ]; then
+		curl -O --location 'https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage'
+		chmod +x appimagetool-x86_64.AppImage
+	fi
+
+	curl -O --location "${LIBSTEAM_INTEGRATION_BIN_LINK}/linux/libsteam_integration.so" 
+
+	cp $SDK/redistributable_bin/linux64/libsteam_api.so squashfs-root/usr/lib
+	cp libsteam_integration.so squashfs-root/usr/lib
+
+	ARCH=x86_64 ./appimagetool-x86_64.AppImage squashfs-root Hypersomnia-Steam.AppImage
+}
+
 upload_to_steam() {
 	local SDK="$SCRIPT_DIR/steamworks/sdk"
 	local CONTENT_BUILDER="$SDK/tools/ContentBuilder"
-	cp $SCRIPT_DIR/vdf/app_build.vdf $CONTENT_BUILDER/scripts
-
 	local CONTENT="$CONTENT_BUILDER/content"
 	local STEAMCMD_DIR="$CONTENT_BUILDER/builder_linux"
+
+	echo "SDK: $SDK"
+	echo "CONTENT: $CONTENT"
+
+	echo "Copying app_build.vdf"
+	cp $SCRIPT_DIR/vdf/app_build.vdf $CONTENT_BUILDER/scripts
 
 	rm -rf $CONTENT
 	mkdir $CONTENT
@@ -176,19 +202,41 @@ upload_to_steam() {
 
 	local APPIMAGE="binaries-Linux/Hypersomnia.AppImage"
 	chmod +x $APPIMAGE
-	cp $APPIMAGE $CONTENT/linux
+
+	pushd binaries-Linux
+		repack_appimage_for_steam
+	popd
+
+	local STEAM_APPIMAGE="binaries-Linux/Hypersomnia-Steam.AppImage"
+	mv $STEAM_APPIMAGE $CONTENT/linux/Hypersomnia.AppImage
+
+	echo "Repacking Windows .zip for Steam release."
 
 	unzip "binaries-Windows/Hypersomnia-for-Windows.zip" -d $CONTENT/windows
 
+	curl -O --location "${LIBSTEAM_INTEGRATION_BIN_LINK}/windows/libsteam_integration.dll" 
+	cp $SDK/redistributable_bin/win64/steam_api64.dll $CONTENT/windows
+	cp libsteam_integration.dll $CONTENT/windows
+
 	pushd binaries-MacOS
-	7z x Hypersomnia-for-MacOS.app.sfx
-	mv Hypersomnia.app $CONTENT/macos
+		echo "Repacking MacOS App folder for Steam release."
+
+		7z x Hypersomnia-for-MacOS.app.sfx
+		mv Hypersomnia.app $CONTENT/macos
+		local MACOS_EXECUTABLE_FOLDER="$CONTENT/macos/Hypersomnia.app/Contents/MacOS/"
+
+		curl -O --location "${LIBSTEAM_INTEGRATION_BIN_LINK}/macos/libsteam_integration.dylib" 
+
+		cp $SDK/redistributable_bin/osx/libsteam_api.dylib $MACOS_EXECUTABLE_FOLDER
+		cp libsteam_integration.dylib $MACOS_EXECUTABLE_FOLDER
 	popd
 
 	pushd $STEAMCMD_DIR
-
-	./steamcmd.sh +login $STEAM_LOGIN +run_app_build ../scripts/app_build.vdf +quit
-
+		if [[ "$SKIP_UPLOADING_TO_STEAM" == "1" ]]; then
+			echo "Skipping uploading to Steam due to SKIP_UPLOADING_TO_STEAM specified."
+		else
+			./steamcmd.sh +login $STEAM_LOGIN +run_app_build ../scripts/app_build.vdf +quit
+		fi
 	popd
 }
 
@@ -247,7 +295,7 @@ rm -rf $OUTPUT_FOLDER
 mkdir $OUTPUT_FOLDER
 
 if [[ "$UPLOAD_TO_STEAM" == "1" ]]; then
-	message "Uploading to Steam."
+	echo "Uploading to Steam."
 	upload_to_steam
 fi
 
