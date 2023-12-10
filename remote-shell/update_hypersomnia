@@ -13,7 +13,7 @@ chmod +x ./Hypersomnia-for-Linux.sfx
 
 mkdir -p hypersomnia/user/downloads
 cp ~/remote-shell/user/* hypersomnia/user/
-ln -s ~/community_arenas hypersomnia/user/downloads/arenas
+ln -s /var/www/app/public/arenas  hypersomnia/user/downloads/arenas
 
 cd ..
 

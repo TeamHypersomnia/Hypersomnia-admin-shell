@@ -214,9 +214,9 @@ upload_to_steam() {
 
 	unzip "binaries-Windows/Hypersomnia-for-Windows.zip" -d $CONTENT/windows
 
-	curl -O --location "${LIBSTEAM_INTEGRATION_BIN_LINK}/windows/libsteam_integration.dll" 
-	cp $SDK/redistributable_bin/win64/steam_api64.dll $CONTENT/windows
-	cp libsteam_integration.dll $CONTENT/windows
+	curl -O --location "${LIBSTEAM_INTEGRATION_BIN_LINK}/windows/steam_integration.dll" 
+	cp $SDK/redistributable_bin/win64/steam_api64.dll $CONTENT/windows/hypersomnia
+	cp steam_integration.dll $CONTENT/windows/hypersomnia
 
 	pushd binaries-MacOS
 		echo "Repacking MacOS App folder for Steam release."

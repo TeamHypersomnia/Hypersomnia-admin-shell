@@ -1,6 +1,6 @@
 .rcon_password
 steamworks/sdk
 appimagetool-x86_64.AppImage
-libsteam_integration.dll
+steam_integration.dll
 libsteam_integration.dylib
 libsteam_integration.so
