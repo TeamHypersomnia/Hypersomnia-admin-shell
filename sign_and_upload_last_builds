@@ -280,8 +280,6 @@ fi
 sign_and_version_AppImage
 sign_and_version Windows exe "updater"
 sign_and_version Windows zip "release"
-sign_and_version Linux sfx "updater"
-sign_and_version Linux tar.gz "release"
 sign_and_version MacOS app.sfx "updater"
 sign_and_version MacOS dmg "release"
 

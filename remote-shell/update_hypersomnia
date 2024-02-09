@@ -2,30 +2,8 @@
 
 . ~/remote-shell/ADDRESS
 
-rm -rf update_temp
-mkdir update_temp
+rm -f Hypersomnia.AppImage
+wget $DOWNLOADS_HOST/builds/latest/Hypersomnia.AppImage
+chmod +x ./Hypersomnia.AppImage
 
-cd update_temp
-
-wget $DOWNLOADS_HOST/builds/latest/Hypersomnia-for-Linux.sfx
-chmod +x ./Hypersomnia-for-Linux.sfx
-./Hypersomnia-for-Linux.sfx
-
-mkdir -p hypersomnia/user/downloads
-cp ~/remote-shell/user/* hypersomnia/user/
-ln -s /var/www/app/public/arenas  hypersomnia/user/downloads/arenas
-
-cd ..
-
-. ~/remote-shell/interrupt_all.sh
-
-rm -rf hypersomnia
-
-mv update_temp/hypersomnia hypersomnia
-
-pushd hypersomnia
-
-. ~/remote-shell/run_dedicated.sh
-. ~/remote-shell/run_masterserver.sh
-
-popd
+. ~/remote-shell/restart_servers
