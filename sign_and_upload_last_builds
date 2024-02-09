@@ -162,25 +162,6 @@ sign_and_version_AppImage() {
 	cp $FILE_PATH $OUTPUT_FOLDER
 }
 
-repack_appimage_for_steam() {
-	echo "Repacking AppImage for Steam release."
-	local SDK="$SCRIPT_DIR/steamworks/sdk"
-
-	./Hypersomnia.AppImage --appimage-extract
-
-	if [ ! -f appimagetool-x86_64.AppImage ]; then
-		curl -O --location 'https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage'
-		chmod +x appimagetool-x86_64.AppImage
-	fi
-
-	curl -O --location "${LIBSTEAM_INTEGRATION_BIN_LINK}/linux/libsteam_integration.so" 
-
-	cp $SDK/redistributable_bin/linux64/libsteam_api.so squashfs-root/usr/lib
-	cp libsteam_integration.so squashfs-root/usr/lib
-
-	ARCH=x86_64 ./appimagetool-x86_64.AppImage squashfs-root Hypersomnia-Steam.AppImage
-}
-
 upload_to_steam() {
 	local SDK="$SCRIPT_DIR/steamworks/sdk"
 	local CONTENT_BUILDER="$SDK/tools/ContentBuilder"
@@ -203,11 +184,8 @@ upload_to_steam() {
 	local APPIMAGE="binaries-Linux/Hypersomnia.AppImage"
 	chmod +x $APPIMAGE
 
-	pushd binaries-Linux
-		repack_appimage_for_steam
-	popd
-
 	local STEAM_APPIMAGE="binaries-Linux/Hypersomnia-Steam.AppImage"
+	chmod +x $STEAM_APPIMAGE
 	mv $STEAM_APPIMAGE $CONTENT/linux/Hypersomnia.AppImage
 
 	echo "Repacking Windows .zip for Steam release."
