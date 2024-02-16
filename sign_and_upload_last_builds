@@ -145,7 +145,18 @@ sign_and_version() {
 }
 
 sign_and_version_AppImage() {
-	local FILE_PATH="binaries-Linux/Hypersomnia.AppImage"
+	local TYPE=$1
+	local PLATFORM="Linux"
+	local VERSION_FILENAME="version-AppImage.txt"
+	local APPIMAGE_FILENAME="Hypersomnia.AppImage"
+
+	if [[ "$TYPE" == "Headless" ]]; then
+		PLATFORM="LinuxHeadless";
+		VERSION_FILENAME="version-Headless-AppImage.txt"
+		APPIMAGE_FILENAME="Hypersomnia-Headless.AppImage"
+	fi
+
+	local FILE_PATH="binaries-$PLATFORM/$APPIMAGE_FILENAME"
 	SIGN_NAMESPACE="self_updater"
 
 	if [[ "$SKIP_SIGNING" == "1" ]]; then
@@ -153,8 +164,8 @@ sign_and_version_AppImage() {
 	else
 		sign_platform_file $FILE_PATH $SIGN_NAMESPACE
 
-		create_version_file Linux $SIGNATURE_FILE_PATH
-		mv "$OUTPUT_FOLDER/version-Linux.txt" "$OUTPUT_FOLDER/version-AppImage.txt"
+		create_version_file $PLATFORM $SIGNATURE_FILE_PATH
+		mv "$OUTPUT_FOLDER/version-$PLATFORM.txt" "$OUTPUT_FOLDER/$VERSION_FILENAME"
 
 		mv $SIGNATURE_FILE_PATH $OUTPUT_FOLDER
 	fi
@@ -232,16 +243,19 @@ if [[ "$SKIP_DOWNLOADING" == "1" ]]; then
 	echo "SKIPPING DOWNLOAD! Re-using previously downloaded files."
 else
 	download_from_github_actions Linux
+	download_from_github_actions LinuxHeadless
 	download_from_github_actions MacOS
 	download_from_appveyor
 fi
 
 unpack_from_github_actions Linux
+unpack_from_github_actions LinuxHeadless
 unpack_from_github_actions MacOS
 unpack_from_appveyor
 
 print_version Windows
 print_version Linux
+print_version LinuxHeadless
 print_version MacOS
 
 read_version Linux
@@ -278,6 +292,7 @@ if [[ "$UPLOAD_TO_STEAM" == "1" ]]; then
 fi
 
 sign_and_version_AppImage
+sign_and_version_AppImage Headless
 sign_and_version Windows exe "updater"
 sign_and_version Windows zip "release"
 sign_and_version MacOS app.sfx "updater"

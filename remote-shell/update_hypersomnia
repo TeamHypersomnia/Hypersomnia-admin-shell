@@ -2,8 +2,8 @@
 
 . ~/remote-shell/ADDRESS
 
-rm -f Hypersomnia.AppImage
-wget $DOWNLOADS_HOST/builds/latest/Hypersomnia.AppImage
-chmod +x ./Hypersomnia.AppImage
+rm -f Hypersomnia-Headless.AppImage
+wget $DOWNLOADS_HOST/builds/latest/Hypersomnia-Headless.AppImage
+chmod +x ./Hypersomnia-Headless.AppImage
 
 . ~/remote-shell/restart_servers
