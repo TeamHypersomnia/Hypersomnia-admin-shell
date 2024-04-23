@@ -1,0 +1,5 @@
+#!/bin/bash
+rsync -L -avzP cmake/web/hypersomnia.io $WEB_ADDR:/tmp
+
+ssh -t $WEB_ADDR 'sudo mv /tmp/hypersomnia.io /etc/nginx/sites-available/'
+ssh -t $WEB_ADDR 'sudo systemctl restart nginx'

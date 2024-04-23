@@ -1,0 +1,16 @@
+#!/bin/bash
+rsync -zP --inplace cmake/hypersomnia.ico $UPLOAD_ADDR:~/web/favicon.ico
+
+rsync -zP --inplace build/current/Hypersomnia.html $UPLOAD_ADDR:~/web
+rsync -zP --inplace build/current/Hypersomnia.js $UPLOAD_ADDR:~/web
+rsync -zP --inplace build/current/Hypersomnia.wasm $UPLOAD_ADDR:~/web
+rsync -zP --inplace build/current/Hypersomnia.worker.js $UPLOAD_ADDR:~/web
+
+ssh -t $WEB_ADDR 'sudo mv ~/web/* /var/www/html/builds/'
+
+DL_SCRIPT="wget $DL_ADDR/builds/latest/Hypersomnia.wasm;"
+DL_SCRIPT="$DL_SCRIPT wget $DL_ADDR/builds/latest/Hypersomnia.js;"
+DL_SCRIPT="$DL_SCRIPT wget $DL_ADDR/builds/latest/Hypersomnia.html;"
+DL_SCRIPT="$DL_SCRIPT wget $DL_ADDR/builds/latest/Hypersomnia.worker.js"
+
+ssh -t $TARGET_ADDR 'cd ~/web; '$DL_SCRIPT' mv ~/web/* /var/www/html/'
