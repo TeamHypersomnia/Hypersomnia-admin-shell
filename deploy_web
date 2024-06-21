@@ -1,16 +1,29 @@
 #!/bin/bash
-rsync -zP --inplace cmake/hypersomnia.ico $UPLOAD_ADDR:~/web/favicon.ico
 
-rsync -zP --inplace build/current/Hypersomnia.html $UPLOAD_ADDR:~/web
-rsync -zP --inplace build/current/Hypersomnia.js $UPLOAD_ADDR:~/web
-rsync -zP --inplace build/current/Hypersomnia.wasm $UPLOAD_ADDR:~/web
-rsync -zP --inplace build/current/Hypersomnia.worker.js $UPLOAD_ADDR:~/web
+# Rsync commands to upload files
+rsync -zP --inplace cmake/hypersomnia.ico $UPLOAD_ADDR:~/web/favicon.ico || { echo 'Rsync failed'; exit 1; }
+rsync -zP --inplace cmake/web/discord_redirect.html $UPLOAD_ADDR:~/web || { echo 'Rsync failed'; exit 1; }
+rsync -zP --inplace build/current/Hypersomnia.wasm $UPLOAD_ADDR:~/web || { echo 'Rsync failed'; exit 1; }
+rsync -zP --inplace build/current/Hypersomnia.data $UPLOAD_ADDR:~/web || { echo 'Rsync failed'; exit 1; }
+rsync -zP --inplace build/current/Hypersomnia.html $UPLOAD_ADDR:~/web || { echo 'Rsync failed'; exit 1; }
+rsync -zP --inplace build/current/Hypersomnia.js $UPLOAD_ADDR:~/web || { echo 'Rsync failed'; exit 1; }
+rsync -zP --inplace build/current/Hypersomnia.worker.js $UPLOAD_ADDR:~/web || { echo 'Rsync failed'; exit 1; }
 
-ssh -t $WEB_ADDR 'sudo mv ~/web/* /var/www/html/builds/'
+# Copy uploaded files into the proper directory on the first server
+ssh -t $UPLOAD_ADDR 'sudo cp ~/web/* /var/www/html/builds/' || { echo 'SSH move command failed'; exit 1; }
 
-DL_SCRIPT="wget $DL_ADDR/builds/latest/Hypersomnia.wasm;"
-DL_SCRIPT="$DL_SCRIPT wget $DL_ADDR/builds/latest/Hypersomnia.js;"
-DL_SCRIPT="$DL_SCRIPT wget $DL_ADDR/builds/latest/Hypersomnia.html;"
-DL_SCRIPT="$DL_SCRIPT wget $DL_ADDR/builds/latest/Hypersomnia.worker.js"
+# Construct the download script
+DL_SCRIPT="curl -O --location $DL_ADDR/builds/Hypersomnia.wasm;"
+DL_SCRIPT="$DL_SCRIPT curl -O --location $DL_ADDR/builds/Hypersomnia.data;"
+DL_SCRIPT="$DL_SCRIPT curl -O --location $DL_ADDR/builds/Hypersomnia.js;"
+DL_SCRIPT="$DL_SCRIPT curl -O --location $DL_ADDR/builds/Hypersomnia.html;"
+DL_SCRIPT="$DL_SCRIPT curl -O --location $DL_ADDR/builds/Hypersomnia.worker.js;"
+DL_SCRIPT="$DL_SCRIPT curl -O --location $DL_ADDR/builds/favicon.ico;"
+DL_SCRIPT="$DL_SCRIPT curl -O --location $DL_ADDR/builds/discord_redirect.html;"
 
-ssh -t $TARGET_ADDR 'cd ~/web; '$DL_SCRIPT' mv ~/web/* /var/www/html/'
+# Download the files on the target server and move them into the proper directory
+CD_CMD='cd ~/web; '
+MV_CMD='sudo mv ~/web/* /var/www/html/'
+CMDLINE="${CD_CMD}${DL_SCRIPT}${MV_CMD}"
+
+ssh -t "$TARGET_ADDR" "$CMDLINE" || { echo 'SSH download and move command failed'; exit 1; }
