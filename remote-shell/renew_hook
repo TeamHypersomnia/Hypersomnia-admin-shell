@@ -1,0 +1,6 @@
+#!/bin/bash
+
+sudo cp /etc/letsencrypt/live/hypersomnia.xyz/fullchain.pem /home/ubuntu/fullchain.pem
+sudo cp /etc/letsencrypt/live/hypersomnia.xyz/privkey.pem /home/ubuntu/privkey.pem
+
+sudo -u ubuntu /home/ubuntu/remote-shell/restart_servers
