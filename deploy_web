@@ -1,8 +1,7 @@
 #!/bin/bash
 
 # Rsync commands to upload files
-rsync -zP --inplace cmake/hypersomnia.ico $UPLOAD_ADDR:~/web/favicon.ico || { echo 'Rsync failed'; exit 1; }
-rsync -zP --inplace cmake/web/discord_redirect.html $UPLOAD_ADDR:~/web || { echo 'Rsync failed'; exit 1; }
+rsync -zP --inplace cmake/web/assets/* $UPLOAD_ADDR:~/web/assets/ || { echo 'Rsync failed'; exit 1; }
 rsync -zP --inplace build/current/Hypersomnia.wasm $UPLOAD_ADDR:~/web || { echo 'Rsync failed'; exit 1; }
 rsync -zP --inplace build/current/Hypersomnia.data $UPLOAD_ADDR:~/web || { echo 'Rsync failed'; exit 1; }
 rsync -zP --inplace build/current/Hypersomnia.html $UPLOAD_ADDR:~/web || { echo 'Rsync failed'; exit 1; }
@@ -10,7 +9,7 @@ rsync -zP --inplace build/current/Hypersomnia.js $UPLOAD_ADDR:~/web || { echo 'R
 rsync -zP --inplace build/current/Hypersomnia.worker.js $UPLOAD_ADDR:~/web || { echo 'Rsync failed'; exit 1; }
 
 # Copy uploaded files into the proper directory on the first server
-ssh -t $UPLOAD_ADDR 'sudo cp ~/web/* /var/www/html/builds/' || { echo 'SSH move command failed'; exit 1; }
+ssh -t $UPLOAD_ADDR 'sudo cp -r ~/web/* /var/www/html/builds/' || { echo 'SSH move command failed'; exit 1; }
 
 # Construct the download script
 DL_SCRIPT="curl -O --location $DL_ADDR/builds/Hypersomnia.wasm;"
@@ -18,12 +17,16 @@ DL_SCRIPT="$DL_SCRIPT curl -O --location $DL_ADDR/builds/Hypersomnia.data;"
 DL_SCRIPT="$DL_SCRIPT curl -O --location $DL_ADDR/builds/Hypersomnia.js;"
 DL_SCRIPT="$DL_SCRIPT curl -O --location $DL_ADDR/builds/Hypersomnia.html;"
 DL_SCRIPT="$DL_SCRIPT curl -O --location $DL_ADDR/builds/Hypersomnia.worker.js;"
-DL_SCRIPT="$DL_SCRIPT curl -O --location $DL_ADDR/builds/favicon.ico;"
-DL_SCRIPT="$DL_SCRIPT curl -O --location $DL_ADDR/builds/discord_redirect.html;"
+DL_SCRIPT="$DL_SCRIPT mkdir assets;"
+DL_SCRIPT="$DL_SCRIPT cd assets;"
+DL_SCRIPT="$DL_SCRIPT curl -O --location $DL_ADDR/builds/assets/favicon.ico;"
+DL_SCRIPT="$DL_SCRIPT curl -O --location $DL_ADDR/builds/assets/discord_redirect.html;"
+DL_SCRIPT="$DL_SCRIPT curl -O --location $DL_ADDR/builds/assets/common.js;"
+DL_SCRIPT="$DL_SCRIPT curl -O --location $DL_ADDR/builds/assets/common.css;"
 
 # Download the files on the target server and move them into the proper directory
 CD_CMD='cd ~/web; '
-MV_CMD='sudo mv ~/web/* /var/www/html/'
+MV_CMD='sudo rm -rf /var/www/html/assets; sudo mv ~/web/* /var/www/html/'
 CMDLINE="${CD_CMD}${DL_SCRIPT}${MV_CMD}"
 
 ssh -t "$TARGET_ADDR" "$CMDLINE" || { echo 'SSH download and move command failed'; exit 1; }
