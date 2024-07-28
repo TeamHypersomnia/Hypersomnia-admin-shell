@@ -1,0 +1,47 @@
+#!/bin/bash
+
+# Define the service files and their destinations
+SERVICES_DIR="/home/ubuntu/remote-shell/services"
+SERVICE_FILES=("hypersomnia.service" "masterserver.service")
+SYSTEMD_DIR="/etc/systemd/system"
+
+# Create symbolic links for the service files
+for SERVICE in "${SERVICE_FILES[@]}"; do
+    SRC="${SERVICES_DIR}/${SERVICE}"
+    DEST="${SYSTEMD_DIR}/${SERVICE}"
+    if [ -e "$SRC" ]; then
+        if [ -L "$DEST" ]; then
+            echo "Symlink for $SERVICE already exists, updating it..."
+            ln -sf "$SRC" "$DEST"
+        elif [ -e "$DEST" ]; then
+            echo "Error: $DEST exists and is not a symlink."
+            exit 1
+        else
+            echo "Creating symlink for $SERVICE..."
+            ln -s "$SRC" "$DEST"
+        fi
+    else
+        echo "Error: $SRC does not exist."
+        exit 1
+    fi
+done
+
+# Reload systemd to recognize the new service files
+echo "Reloading systemd daemon..."
+systemctl daemon-reload
+
+# Enable the services
+for SERVICE in "${SERVICE_FILES[@]}"; do
+    echo "Enabling $SERVICE..."
+    systemctl enable "$SERVICE"
+done
+
+echo "All services have been successfully enabled."
+
+# Optionally start the services
+for SERVICE in "${SERVICE_FILES[@]}"; do
+    echo "Starting $SERVICE..."
+    systemctl start "$SERVICE"
+done
+
+echo "All services have been started."

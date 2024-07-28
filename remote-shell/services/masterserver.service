@@ -1,0 +1,14 @@
+[Unit]
+Description=Hypersomnia Masterserver
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu
+ExecStart=/home/ubuntu/Hypersomnia-Headless.AppImage --masterserver --as-service
+Restart=always
+RestartSec=0.2
+
+[Install]
+WantedBy=multi-user.target

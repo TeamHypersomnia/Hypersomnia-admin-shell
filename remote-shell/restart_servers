@@ -2,7 +2,4 @@
 
 . ~/remote-shell/interrupt_all.sh
 
-sleep 1
-
-. ~/remote-shell/run_dedicated.sh
-. ~/remote-shell/run_masterserver.sh
+# Services will restart themselves
