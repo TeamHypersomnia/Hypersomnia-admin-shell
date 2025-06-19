@@ -10,13 +10,8 @@ echo "Script dir: $SCRIPT_DIR"
 . ./developer_upload_version_folder.sh
 
 RELEASE_NOTES_FILENAME="release_notes.txt"
-
-APPVEYOR_PATH="https://ci.appveyor.com/api/projects/geneotech/Hypersomnia/artifacts"
 WORKFLOWS_PATH="https://nightly.link/TeamHypersomnia/Hypersomnia/workflows"
-
 LIBSTEAM_INTEGRATION_BIN_LINK="https://github.com/TeamHypersomnia/Hypersomnia/raw/master/cmake/steam_integration/bin"
-
-APPVEYOR_FILES=("Hypersomnia-for-Windows.exe" "Hypersomnia-for-Windows.zip" $RELEASE_NOTES_FILENAME)
 
 download_file() {
 	URL_LEFT=$1
@@ -29,31 +24,9 @@ download_file() {
 	wget --show-progress $FINAL_URL -o $LOG_FILENAME
 }
 
-download_from_appveyor() {
-	local PLATFORM="Windows"
-
-	for i in "${APPVEYOR_FILES[@]}"
-	do
-		download_file "$APPVEYOR_PATH/" $i
-	done
-		
-	#dos2unix $RELEASE_NOTES_FILENAME
-}
-
 download_from_github_actions() {
 	local PLATFORM=$1
 	download_file "$WORKFLOWS_PATH/${PLATFORM}_build/master/" "$PLATFORM-binaries.zip"
-}
-
-unpack_from_appveyor() {
-	local PLATFORM="Windows"
-	rm -rf binaries-$PLATFORM
-	mkdir binaries-$PLATFORM
-
-	for i in "${APPVEYOR_FILES[@]}"
-	do
-		cp $i binaries-$PLATFORM
-	done
 }
 
 unpack_from_github_actions() {
@@ -242,16 +215,16 @@ pushd /tmp/hypersomnia-deployment
 if [[ "$SKIP_DOWNLOADING" == "1" ]]; then
 	echo "SKIPPING DOWNLOAD! Re-using previously downloaded files."
 else
+	download_from_github_actions Windows
 	download_from_github_actions Linux
 	download_from_github_actions LinuxHeadless
 	download_from_github_actions MacOS
-	download_from_appveyor
 fi
 
+unpack_from_github_actions Windows
 unpack_from_github_actions Linux
 unpack_from_github_actions LinuxHeadless
 unpack_from_github_actions MacOS
-unpack_from_appveyor
 
 print_version Windows
 print_version Linux
