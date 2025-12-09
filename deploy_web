@@ -1,15 +1,16 @@
 #!/bin/bash
 
-# Rsync commands to upload files
-rsync -zP --inplace cmake/web/assets/* $UPLOAD_ADDR:~/web/assets/ || { echo 'Rsync failed'; exit 1; }
-rsync -zP --inplace build/current/Hypersomnia.wasm $UPLOAD_ADDR:~/web || { echo 'Rsync failed'; exit 1; }
-rsync -zP --inplace build/current/Hypersomnia.data $UPLOAD_ADDR:~/web || { echo 'Rsync failed'; exit 1; }
-rsync -zP --inplace build/current/Hypersomnia.html $UPLOAD_ADDR:~/web || { echo 'Rsync failed'; exit 1; }
-rsync -zP --inplace build/current/Hypersomnia.js $UPLOAD_ADDR:~/web || { echo 'Rsync failed'; exit 1; }
-rsync -zP --inplace build/current/Hypersomnia.worker.js $UPLOAD_ADDR:~/web || { echo 'Rsync failed'; exit 1; }
+set -e
 
-# Copy uploaded files into the proper directory on the first server
-ssh -t $UPLOAD_ADDR 'sudo cp -r ~/web/* /var/www/html/builds/' || { echo 'SSH move command failed'; exit 1; }
+HOSTING=/var/www/app/hosting/builds
+
+# Rsync commands to upload files
+rsync -zP --inplace cmake/web/assets/* $UPLOAD_ADDR:$HOSTING/assets/ || { echo 'Rsync failed'; exit 1; }
+rsync -zP --inplace build/current/Hypersomnia.wasm $UPLOAD_ADDR:$HOSTING || { echo 'Rsync failed'; exit 1; }
+rsync -zP --inplace build/current/Hypersomnia.data $UPLOAD_ADDR:$HOSTING || { echo 'Rsync failed'; exit 1; }
+rsync -zP --inplace build/current/Hypersomnia.html $UPLOAD_ADDR:$HOSTING || { echo 'Rsync failed'; exit 1; }
+rsync -zP --inplace build/current/Hypersomnia.js $UPLOAD_ADDR:$HOSTING || { echo 'Rsync failed'; exit 1; }
+rsync -zP --inplace build/current/Hypersomnia.worker.js $UPLOAD_ADDR:$HOSTING || { echo 'Rsync failed'; exit 1; }
 
 # Construct the download script
 DL_SCRIPT="curl -O --location $DL_ADDR/builds/Hypersomnia.wasm;"

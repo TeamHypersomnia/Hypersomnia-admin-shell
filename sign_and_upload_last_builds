@@ -1,4 +1,7 @@
 #!/bin/bash
+
+set -e
+
 SET_TO_LATEST_FLAG=$1
 
 # Directory where this script is located
@@ -206,6 +209,8 @@ DEPLOYMENT_FOLDER="/tmp/hypersomnia-deployment"
 if [[ "$SKIP_DOWNLOADING" == "1" ]]; then
 	echo "Reusing $DEPLOYMENT_FOLDER" 
 else
+	echo "Creating $DEPLOYMENT_FOLDER"
+
 	rm -rf $DEPLOYMENT_FOLDER
 	mkdir  $DEPLOYMENT_FOLDER
 fi
@@ -215,6 +220,7 @@ pushd /tmp/hypersomnia-deployment
 if [[ "$SKIP_DOWNLOADING" == "1" ]]; then
 	echo "SKIPPING DOWNLOAD! Re-using previously downloaded files."
 else
+	echo "Downloading binaries for all platforms."
 	download_from_github_actions Windows
 	download_from_github_actions Linux
 	download_from_github_actions LinuxHeadless
