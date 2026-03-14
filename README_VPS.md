@@ -26,7 +26,7 @@ MY_KEY='PUT YOUR PUBLIC KEY HERE'
 For example (this public key is mine, don't add it unless you want to give me access to your VPS):
 
 ```sh
-MY_KEY='ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFpBAHe/KyfrmzWcx5LxbAytckcJj2ssIJYAfNdkg318 ubuntu@hypersomnia.xyz'
+MY_KEY='ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFpBAHe/KyfrmzWcx5LxbAytckcJj2ssIJYAfNdkg318 ubuntu@hypersomnia.io'
 ```
 
 To authorize this key, do this:
