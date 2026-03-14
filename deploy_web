@@ -4,25 +4,34 @@ set -e
 
 HOSTING=/var/www/app/hosting/builds
 
+# Set MULTITHREADED=1 to also upload/download the worker.js (pthreads build).
+# Defaults to 0 (single-threaded build).
+MULTITHREADED=${MULTITHREADED:-0}
+
 # Rsync commands to upload files
 rsync -zP --inplace cmake/web/assets/* $UPLOAD_ADDR:$HOSTING/assets/ || { echo 'Rsync failed'; exit 1; }
 rsync -zP --inplace build/current/Hypersomnia.wasm $UPLOAD_ADDR:$HOSTING || { echo 'Rsync failed'; exit 1; }
 rsync -zP --inplace build/current/Hypersomnia.data $UPLOAD_ADDR:$HOSTING || { echo 'Rsync failed'; exit 1; }
 rsync -zP --inplace build/current/Hypersomnia.html $UPLOAD_ADDR:$HOSTING || { echo 'Rsync failed'; exit 1; }
 rsync -zP --inplace build/current/Hypersomnia.js $UPLOAD_ADDR:$HOSTING || { echo 'Rsync failed'; exit 1; }
-rsync -zP --inplace build/current/Hypersomnia.worker.js $UPLOAD_ADDR:$HOSTING || { echo 'Rsync failed'; exit 1; }
+if [ "$MULTITHREADED" = "1" ]; then
+    rsync -zP --inplace build/current/Hypersomnia.worker.js $UPLOAD_ADDR:$HOSTING || { echo 'Rsync failed'; exit 1; }
+fi
 
 # Construct the download script
 DL_SCRIPT="curl -O --location $DL_ADDR/builds/Hypersomnia.wasm;"
 DL_SCRIPT="$DL_SCRIPT curl -O --location $DL_ADDR/builds/Hypersomnia.data;"
 DL_SCRIPT="$DL_SCRIPT curl -O --location $DL_ADDR/builds/Hypersomnia.js;"
 DL_SCRIPT="$DL_SCRIPT curl -O --location $DL_ADDR/builds/Hypersomnia.html;"
-DL_SCRIPT="$DL_SCRIPT curl -O --location $DL_ADDR/builds/Hypersomnia.worker.js;"
+if [ "$MULTITHREADED" = "1" ]; then
+    DL_SCRIPT="$DL_SCRIPT curl -O --location $DL_ADDR/builds/Hypersomnia.worker.js;"
+fi
 DL_SCRIPT="$DL_SCRIPT mkdir assets;"
 DL_SCRIPT="$DL_SCRIPT cd assets;"
 DL_SCRIPT="$DL_SCRIPT curl -O --location $DL_ADDR/builds/assets/favicon.ico;"
 DL_SCRIPT="$DL_SCRIPT curl -O --location $DL_ADDR/builds/assets/discord_redirect.html;"
 DL_SCRIPT="$DL_SCRIPT curl -O --location $DL_ADDR/builds/assets/common.js;"
+DL_SCRIPT="$DL_SCRIPT curl -O --location $DL_ADDR/builds/assets/coi-serviceworker.js;"
 DL_SCRIPT="$DL_SCRIPT curl -O --location $DL_ADDR/builds/assets/common.css;"
 
 # Download the files on the target server and move them into the proper directory
