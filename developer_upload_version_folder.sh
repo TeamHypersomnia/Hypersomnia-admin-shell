@@ -6,7 +6,7 @@ developer_upload_version_folder() {
 	local SET_TO_LATEST_FLAG=$3
 
 	pushd $SOURCE_FOLDER
-	rsync -avzP . $ADDRESS:~/uploads/$REFERENCE_VERSION
+	rsync -avzP --mkpath . $ADDRESS:~/uploads/$REFERENCE_VERSION
 	popd
 
 	call_remote move_uploaded_file $REFERENCE_VERSION $SET_TO_LATEST_FLAG

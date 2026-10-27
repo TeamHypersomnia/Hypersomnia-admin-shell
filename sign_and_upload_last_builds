@@ -149,6 +149,27 @@ sign_and_version_AppImage() {
 	cp $FILE_PATH $OUTPUT_FOLDER
 }
 
+# What the website shows of the released version - weapon stats, their images, the official arenas -
+# made by the Linux Headless CI build (cmake/export_site_data.py). One folder for every version: replaced,
+# not kept per version. The website loads it again by itself when its manifest changes.
+publish_site_data() {
+	local SITE_DATA_DIR="binaries-LinuxHeadless/site_data"
+
+	if [ ! -f "$SITE_DATA_DIR/manifest.json" ]; then
+		echo "No site data in the LinuxHeadless artifact - the website keeps its current one."
+		return
+	fi
+
+	# The LinuxHeadless build skips some commits ([win only] etc.) or fails - then its artifact is of an older version
+	if ! grep -q "\"version\": \"$REFERENCE_VERSION\"" "$SITE_DATA_DIR/manifest.json"; then
+		echo "Site data is not of $REFERENCE_VERSION - not uploading it, the website keeps its current one."
+		return
+	fi
+
+	# The old files go only after the new ones are in place, so no image is missing meanwhile
+	rsync -az --delete-after --delay-updates "$SITE_DATA_DIR/" "$ADDRESS:/var/www/app/hosting/builds/site_data/"
+}
+
 upload_to_steam() {
 	local SDK="$SCRIPT_DIR/steamworks/sdk"
 	local CONTENT_BUILDER="$SDK/tools/ContentBuilder"
@@ -184,16 +205,18 @@ upload_to_steam() {
 	cp steam_integration.dll $CONTENT/windows/hypersomnia
 
 	pushd binaries-MacOS
-		echo "Repacking MacOS App folder for Steam release."
+		echo "Unpacking the pre-built, code-signed MacOS Steam bundle."
 
-		7z x Hypersomnia-for-MacOS.app.sfx
+		# The Steam bundle is assembled and ad-hoc code-signed on macOS in CI
+		# (see cmake/generate_archives.sh): it already contains the Steam-enabled,
+		# universal (arm64;x86_64) libsteam_integration.dylib and libsteam_api.dylib.
+		#
+		# It MUST NOT be modified here. We run on Linux, so we cannot re-sign;
+		# injecting dylibs would break the bundle signature and previously also
+		# dropped in an x86_64-only integration dylib that crashed arm64 Macs at
+		# launch ("Hypersomnia cannot be opened because of a problem").
+		7z x Hypersomnia-for-MacOS-Steam.app.sfx
 		mv Hypersomnia.app $CONTENT/macos
-		local MACOS_EXECUTABLE_FOLDER="$CONTENT/macos/Hypersomnia.app/Contents/MacOS/"
-
-		curl -O --location "${LIBSTEAM_INTEGRATION_BIN_LINK}/macos/libsteam_integration.dylib" 
-
-		cp $SDK/redistributable_bin/osx/libsteam_api.dylib $MACOS_EXECUTABLE_FOLDER
-		cp libsteam_integration.dylib $MACOS_EXECUTABLE_FOLDER
 	popd
 
 	pushd $STEAMCMD_DIR
@@ -281,6 +304,10 @@ if [[ "$SKIP_UPLOADING" == "1" ]]; then
 	echo "Skipping uploading due to SKIP_UPLOADING specified."
 else
 	developer_upload_version_folder $OUTPUT_FOLDER $REFERENCE_VERSION $SET_TO_LATEST_FLAG
+
+	if [[ "$SET_TO_LATEST_FLAG" == "--set-to-latest" ]]; then
+		publish_site_data
+	fi
 fi
 
 popd

@@ -1,5 +1,6 @@
 #!/bin/bash
-BUILDS=/var/www/html/builds
+set -e
+BUILDS=/var/www/app/hosting/builds
 VERSION=$1
 SET_TO_LATEST_FLAG=$2
 TARGET_PATH="$BUILDS/$VERSION"

@@ -2,8 +2,17 @@
 
 . ~/remote-shell/ADDRESS
 
-rm -f Hypersomnia-Headless.AppImage
-wget $DOWNLOADS_HOST/builds/latest/Hypersomnia-Headless.AppImage
-chmod +x ./Hypersomnia-Headless.AppImage
+# Both services run this one file: the masterserver and the game server (--as-service).
+# The new version is put in place here, before they restart, so they start up to date - left to update themselves,
+# both downloaded to the same .new and swapped the same file at once: one removed what the other had just moved in,
+# and the hub was left without an AppImage (masterserver and the PL servers down until fixed by hand).
+TARGET=~/hypersomnia/Hypersomnia-Headless.AppImage
+NEW="$TARGET.server_update"
+
+wget -q -O "$NEW" $DOWNLOADS_HOST/builds/latest/Hypersomnia-Headless.AppImage \
+	&& chmod +x "$NEW" \
+	&& "$NEW" --version \
+	&& mv -f "$NEW" "$TARGET" \
+	|| { echo "Could not download or run the new AppImage - the servers keep running the old one."; exit 1; }
 
 . ~/remote-shell/restart_servers
